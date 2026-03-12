@@ -1055,6 +1055,25 @@ export async function flushQueuedPushNotifications(salonId: string) {
   return summary;
 }
 
+export async function enqueueDuePushReminders(salonId: string) {
+  await ensureSalonOperational(salonId);
+
+  const result = await sql<{ queued_count: number }>(
+    `
+      select public.enqueue_due_push_reminders($1) as queued_count
+    `,
+    [salonId]
+  );
+
+  const queuedCount = Number(result.rows[0]?.queued_count ?? 0);
+
+  await logOwnerAction(salonId, "notification.reminders_enqueued", "notification_logs", null, {
+    queuedCount
+  });
+
+  return queuedCount;
+}
+
 export async function requestExport(
   salonId: string,
   input: { exportType: string; fileFormat: "csv" | "pdf" }

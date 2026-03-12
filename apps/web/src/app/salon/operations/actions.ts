@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   addRecurringBooking,
   addWaitingListEntry,
+  enqueueDuePushReminders,
   flushQueuedPushNotifications,
   queueCustomerPushNotification,
   requestExport
@@ -74,6 +75,15 @@ export async function queueNotificationAction(formData: FormData) {
 export async function dispatchPushQueueAction() {
   const session = await requireOwnerSession();
 
+  await flushQueuedPushNotifications(session.salonId);
+
+  revalidatePath("/salon/operations");
+}
+
+export async function runPushReminderCycleAction() {
+  const session = await requireOwnerSession();
+
+  await enqueueDuePushReminders(session.salonId);
   await flushQueuedPushNotifications(session.salonId);
 
   revalidatePath("/salon/operations");

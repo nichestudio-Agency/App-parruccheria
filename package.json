@@ -17,7 +17,8 @@
     "clean": "turbo run clean",
     "db:start": "bash -lc 'source ./scripts/load-env.sh && PATH=/opt/homebrew/bin:$PATH supabase start'",
     "db:reset": "bash -lc 'source ./scripts/load-env.sh && PATH=/opt/homebrew/bin:$PATH supabase db reset'",
-    "db:status": "bash -lc 'source ./scripts/load-env.sh && PATH=/opt/homebrew/bin:$PATH supabase status'"
+    "db:status": "bash -lc 'source ./scripts/load-env.sh && PATH=/opt/homebrew/bin:$PATH supabase status'",
+    "push:run": "node ./scripts/run-push-reminders.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

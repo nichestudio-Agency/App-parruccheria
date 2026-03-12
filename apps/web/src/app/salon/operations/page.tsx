@@ -11,6 +11,7 @@ import { requireOwnerSession } from "@/lib/owner-auth";
 
 import {
   createRecurringBookingAction,
+  runPushReminderCycleAction,
   dispatchPushQueueAction,
   createWaitingListAction,
   queueNotificationAction,
@@ -253,6 +254,12 @@ export default async function OperationsPage() {
         <form action={dispatchPushQueueAction}>
           <button className="button" type="submit">
             Invia push in coda adesso
+          </button>
+        </form>
+
+        <form action={runPushReminderCycleAction}>
+          <button className="button" type="submit">
+            Esegui reminder automatici adesso
           </button>
         </form>
 
