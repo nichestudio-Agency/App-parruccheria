@@ -34,10 +34,11 @@ const config: ExpoConfig = {
   android: {
     package: tenantConfig.androidPackageName
   },
-  plugins: ["expo-apple-authentication"],
+  plugins: ["expo-apple-authentication", "expo-notifications"],
   extra: {
     tenantKey: tenantConfig.tenantKey,
-    environmentMode: tenantConfig.environmentMode
+    environmentMode: tenantConfig.environmentMode,
+    easProjectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? null
   }
 };
 

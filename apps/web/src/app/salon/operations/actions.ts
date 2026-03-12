@@ -5,11 +5,11 @@ import { revalidatePath } from "next/cache";
 import {
   addRecurringBooking,
   addWaitingListEntry,
-  queueNotification,
+  flushQueuedPushNotifications,
+  queueCustomerPushNotification,
   requestExport
 } from "@/lib/salon-data";
 import { requireOwnerSession } from "@/lib/owner-auth";
-import { buildBookingConfirmationSubject, buildReminderSubject } from "@repo/notifications";
 
 export async function createWaitingListAction(formData: FormData) {
   const session = await requireOwnerSession();
@@ -45,27 +45,36 @@ export async function createRecurringBookingAction(formData: FormData) {
 
 export async function queueNotificationAction(formData: FormData) {
   const session = await requireOwnerSession();
-  const recipient = String(formData.get("recipient"));
   const eventKey = String(formData.get("eventKey"));
-  const channel = String(formData.get("channel")) as "email" | "push";
+  const customerId = String(formData.get("customerId"));
   const customerName = String(formData.get("customerName") || "") || undefined;
 
-  const subject =
+  const title =
     eventKey === "booking_reminder"
-      ? buildReminderSubject({ salonName: session.salonName, customerName })
-      : buildBookingConfirmationSubject({ salonName: session.salonName, customerName });
+      ? `${session.salonName} - reminder appuntamento`
+      : `${session.salonName} - prenotazione confermata`;
 
-  await queueNotification(session.salonId, {
-    customerId: String(formData.get("customerId") || "") || undefined,
+  const body =
+    eventKey === "booking_reminder"
+      ? `Promemoria appuntamento per ${customerName ?? "cliente"}.`
+      : `Nuovo aggiornamento prenotazione per ${customerName ?? "cliente"}.`;
+
+  await queueCustomerPushNotification(session.salonId, {
+    customerId,
     appointmentId: String(formData.get("appointmentId") || "") || undefined,
-    channel,
     eventKey,
-    recipient,
-    payload: {
-      subject,
-      salonName: session.salonName
-    }
+    title,
+    body,
+    payload: { salonName: session.salonName, screen: "appointments" }
   });
+
+  revalidatePath("/salon/operations");
+}
+
+export async function dispatchPushQueueAction() {
+  const session = await requireOwnerSession();
+
+  await flushQueuedPushNotifications(session.salonId);
 
   revalidatePath("/salon/operations");
 }

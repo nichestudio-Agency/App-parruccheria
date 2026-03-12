@@ -26,12 +26,14 @@ import {
   getEnabledServicesForOperator,
   getTenantBootstrap,
   onAuthStateChange,
+  registerPushToken,
   rescheduleAppointment,
   signInCustomer,
   signInWithApple,
   signInWithGoogle,
   signOutCustomer,
   signUpCustomer,
+  unregisterPushToken,
   updateCustomerProfile,
   type MobileDashboardData,
   type TenantBootstrap
@@ -85,6 +87,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [pushToken, setPushToken] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -117,6 +120,8 @@ export default function App() {
             operatorId: data.operators[0]?.id ?? ""
           }));
           setEmail((current) => current || data.customer.email);
+          const devicePushToken = await registerPushToken(tenantData);
+          setPushToken(devicePushToken);
         }
       } catch (error) {
         if (mounted) {
@@ -143,6 +148,8 @@ export default function App() {
             ...current,
             operatorId: data.operators[0]?.id ?? ""
           }));
+          const devicePushToken = await registerPushToken(tenant);
+          setPushToken(devicePushToken);
         } catch (error) {
           setMessage(formatMobileError(error));
         }
@@ -151,6 +158,7 @@ export default function App() {
       if (!nextSession) {
         setDashboard(null);
         setActiveTab("home");
+        setPushToken(null);
       }
     });
 
@@ -391,8 +399,12 @@ export default function App() {
     setActionLoading(true);
 
     try {
+      if (tenant) {
+        await unregisterPushToken(tenant, pushToken);
+      }
       await signOutCustomer();
       setMessage(null);
+      setPushToken(null);
     } catch (error) {
       setMessage(formatMobileError(error));
     } finally {

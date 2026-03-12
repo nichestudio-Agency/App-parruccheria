@@ -1,7 +1,9 @@
 import type { Session, User } from "@supabase/supabase-js";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Crypto from "expo-crypto";
+import * as Device from "expo-device";
 import * as Linking from "expo-linking";
+import * as Notifications from "expo-notifications";
 import * as WebBrowser from "expo-web-browser";
 import { Platform } from "react-native";
 
@@ -11,6 +13,14 @@ import type { SalonStatus } from "@repo/types";
 import { supabase } from "./supabase";
 
 WebBrowser.maybeCompleteAuthSession();
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false
+  })
+});
 
 export interface TenantBootstrap {
   salon_id: string;
@@ -224,6 +234,71 @@ export async function signUpCustomer(input: {
 
 export async function signOutCustomer() {
   const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function registerPushToken(
+  tenant: TenantBootstrap,
+  appVersion = "1.0.0"
+): Promise<string | null> {
+  if (!Device.isDevice) {
+    return null;
+  }
+
+  const permission = await Notifications.getPermissionsAsync();
+  let finalStatus = permission.status;
+
+  if (finalStatus !== "granted") {
+    const request = await Notifications.requestPermissionsAsync();
+    finalStatus = request.status;
+  }
+
+  if (finalStatus !== "granted") {
+    return null;
+  }
+
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.DEFAULT
+    });
+  }
+
+  const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+
+  if (!projectId) {
+    return null;
+  }
+
+  const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId });
+
+  const { error } = await supabase.rpc("register_customer_push_token", {
+    p_salon_id: tenant.salon_id,
+    p_expo_push_token: tokenResponse.data,
+    p_platform: Platform.OS,
+    p_device_label: Device.modelName ?? null,
+    p_app_version: appVersion
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return tokenResponse.data;
+}
+
+export async function unregisterPushToken(tenant: TenantBootstrap, expoPushToken: string | null) {
+  if (!expoPushToken) {
+    return;
+  }
+
+  const { error } = await supabase.rpc("deactivate_customer_push_token", {
+    p_salon_id: tenant.salon_id,
+    p_expo_push_token: expoPushToken
+  });
 
   if (error) {
     throw new Error(error.message);

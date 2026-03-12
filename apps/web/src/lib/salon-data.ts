@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { dispatchQueuedPushNotifications } from "./push-dispatch";
 import { sql } from "./db";
 
 type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
@@ -993,6 +994,65 @@ export async function queueNotification(
     eventKey: input.eventKey,
     recipient: input.recipient
   });
+}
+
+export async function queueCustomerPushNotification(
+  salonId: string,
+  input: {
+    customerId: string;
+    appointmentId?: string;
+    eventKey: string;
+    title: string;
+    body: string;
+    payload?: Record<string, JsonValue>;
+  }
+) {
+  await ensureSalonOperational(salonId);
+
+  const result = await sql<{ queued_count: number }>(
+    `
+      select public.queue_customer_push_notification(
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7::jsonb
+      ) as queued_count
+    `,
+    [
+      salonId,
+      input.customerId,
+      input.eventKey,
+      input.title,
+      input.body,
+      input.appointmentId ?? null,
+      JSON.stringify(input.payload ?? {})
+    ]
+  );
+
+  await logOwnerAction(salonId, "notification.queued", "notification_logs", null, {
+    channel: "push",
+    eventKey: input.eventKey,
+    customerId: input.customerId,
+    queuedCount: Number(result.rows[0]?.queued_count ?? 0)
+  });
+
+  return Number(result.rows[0]?.queued_count ?? 0);
+}
+
+export async function flushQueuedPushNotifications(salonId: string) {
+  await ensureSalonOperational(salonId);
+  const summary = await dispatchQueuedPushNotifications(salonId);
+
+  await logOwnerAction(salonId, "notification.dispatched", "notification_logs", null, {
+    queued: summary.queued,
+    sent: summary.sent,
+    failed: summary.failed
+  });
+
+  return summary;
 }
 
 export async function requestExport(

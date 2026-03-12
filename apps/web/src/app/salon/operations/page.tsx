@@ -11,6 +11,7 @@ import { requireOwnerSession } from "@/lib/owner-auth";
 
 import {
   createRecurringBookingAction,
+  dispatchPushQueueAction,
   createWaitingListAction,
   queueNotificationAction,
   requestExportAction
@@ -216,17 +217,10 @@ export default async function OperationsPage() {
       <section className="panel stack-lg">
         <div className="stack-xs">
           <p className="eyebrow">Notifiche</p>
-          <h3>Coda notifiche base</h3>
+          <h3>Coda push</h3>
         </div>
 
         <form action={queueNotificationAction} className="detail-grid">
-          <label className="field">
-            <span>Canale</span>
-            <select name="channel" required>
-              <option value="email">Email</option>
-              <option value="push">Push</option>
-            </select>
-          </label>
           <label className="field">
             <span>Evento</span>
             <select name="eventKey" required>
@@ -249,15 +243,17 @@ export default async function OperationsPage() {
             <span>Nome cliente</span>
             <input name="customerName" placeholder="Usato nel testo del messaggio" />
           </label>
-          <label className="field">
-            <span>Destinatario</span>
-            <input name="recipient" placeholder="email o device token" required />
-          </label>
           <div className="actions-inline">
             <button className="button button--primary" type="submit">
               Metti in coda
             </button>
           </div>
+        </form>
+
+        <form action={dispatchPushQueueAction}>
+          <button className="button" type="submit">
+            Invia push in coda adesso
+          </button>
         </form>
 
         <div className="table-wrap">
