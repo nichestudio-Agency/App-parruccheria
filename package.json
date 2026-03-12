@@ -1,0 +1,27 @@
+{
+  "name": "salon-white-label-platform",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "dev:up": "bash ./scripts/dev-up.sh",
+    "dev:down": "bash ./scripts/dev-down.sh",
+    "dev:status": "bash ./scripts/dev-status.sh",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean",
+    "db:start": "bash -lc 'source ./scripts/load-env.sh && PATH=/opt/homebrew/bin:$PATH supabase start'",
+    "db:reset": "bash -lc 'source ./scripts/load-env.sh && PATH=/opt/homebrew/bin:$PATH supabase db reset'",
+    "db:status": "bash -lc 'source ./scripts/load-env.sh && PATH=/opt/homebrew/bin:$PATH supabase status'"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "turbo": "^2.5.5",
+    "typescript": "^5.8.3"
+  }
+}
